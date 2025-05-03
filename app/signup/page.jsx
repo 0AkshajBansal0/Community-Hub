@@ -1,68 +1,176 @@
-import Link from "next/link"
-import Image from "next/image"
-import SignupForm from "@/components/signup-form"
-import HomeNav from "@/components/home-nav"
-import HomeFooter from "@/components/home-footer"
+"use client"
 
-export default function SignupPage() {
+import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { Button } from "../components/ui/button"
+import { Input } from "../components/ui/input"
+import { Label } from "../components/ui/label"
+import { toast } from "sonner"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card"
+import { BackgroundBeams } from "../components/ui/background-beams"
+
+export default function SignUpPage() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  })
+  const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const validateEmail = (email) => {
+    return email.endsWith("@srmist.edu.in")
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+
+    // Validate email domain
+    if (!validateEmail(formData.email)) {
+      toast.error("Only @srmist.edu.in email addresses are allowed")
+      return
+    }
+
+    // Validate password match
+    if (formData.password !== formData.confirmPassword) {
+      toast.error("Passwords do not match")
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      // Send to backend
+      const response = await fetch("http://localhost:5000/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast.success("Account created successfully!")
+        navigate("/signin")
+      } else {
+        toast.error(data.message || "Failed to create account")
+      }
+    } catch (error) {
+      console.error("Sign up error:", error)
+      toast.error("Something went wrong. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 via-white to-rose-50">
-      <HomeNav />
+    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 relative overflow-hidden">
+      <BackgroundBeams className="opacity-20" />
 
-      <div className="container mx-auto px-4 py-16 md:py-24">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
-          <div className="w-full lg:w-1/2 max-w-md mx-auto lg:mx-0">
-            <div className="text-center lg:text-left mb-8">
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Join the Happiness Hub</h1>
-              <p className="mt-3 text-gray-600">
-                Create your account to connect with fellow students, share skills, and discover events.
-              </p>
-            </div>
+      <div className="w-full max-w-md relative z-10">
+        <Card className="bg-slate-800/80 border-slate-700 backdrop-blur-sm">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-3xl font-bold text-center">Join the Community</CardTitle>
+            <CardDescription className="text-center">Create your account to get started</CardDescription>
+          </CardHeader>
 
-            <SignupForm />
-
-            <p className="mt-6 text-center text-sm text-gray-500">
-              Already have an account?{" "}
-              <Link
-                href="/login"
-                className="font-medium text-rose-600 hover:text-rose-500 underline-offset-4 hover:underline"
-              >
-                Sign in
-              </Link>
-            </p>
-          </div>
-
-          <div className="hidden lg:block w-full lg:w-1/2 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-rose-200 to-pink-200 rounded-full blur-3xl opacity-30"></div>
-            <div className="relative bg-white rounded-2xl shadow-xl overflow-hidden border border-rose-100 p-8">
-              <div className="aspect-square relative">
-                <Image
-                  src="/placeholder.svg?height=500&width=500"
-                  fill
-                  alt="Community Illustration"
-                  className="object-cover rounded-lg"
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-white">
+                  Full Name
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="John Doe"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className="bg-slate-700 border-slate-600 text-white"
                 />
               </div>
-              <div className="mt-8 space-y-4">
-                <div className="bg-rose-50 rounded-lg p-4">
-                  <h4 className="font-medium text-rose-800">Exclusive SRM Community</h4>
-                  <p className="text-gray-600 text-sm">Connect with students across all departments</p>
-                </div>
-                <div className="bg-rose-50 rounded-lg p-4">
-                  <h4 className="font-medium text-rose-800">Share Your Talents</h4>
-                  <p className="text-gray-600 text-sm">Help others while showcasing your skills</p>
-                </div>
-                <div className="bg-rose-50 rounded-lg p-4">
-                  <h4 className="font-medium text-rose-800">Discover Events</h4>
-                  <p className="text-gray-600 text-sm">Never miss important campus activities</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <HomeFooter />
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-white">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="your.email@srmist.edu.in"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+                <p className="text-xs text-amber-400">Only @srmist.edu.in email addresses are allowed</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-white">
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-white">
+                  Confirm Password
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-2 rounded-md mt-4"
+              >
+                {isLoading ? "Creating Account..." : "Create Account"}
+              </Button>
+            </form>
+          </CardContent>
+
+          <CardFooter>
+            <div className="text-center w-full">
+              <p className="text-zinc-400">
+                Already have an account?{" "}
+                <Link to="/signin" className="text-purple-400 hover:text-purple-300 font-medium">
+                  Sign in
+                </Link>
+              </p>
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   )
 }
